@@ -101,10 +101,10 @@ private:
 	void SendTimesToShader();
 	void SendToShader(UTextureRenderTarget2D* Texture, const std::function<FLinearColor(const FPropagationPointStatus&)>& Lambda);
 
-	void AddPropagationPoint(const FVector& Point, const float HitStrength);
+	void AddPropagationPoint(const FVector& Point, const float MaxRange);
 	
-	void TryStartPropagation(const FVector& StartPoint, const float HitStrength);
-	void SetupPropagationPoint(const FVector& StartPoint, FPropagationPointStatus& Point, const float HitStrength) const;
+	void TryStartPropagation(const FVector& StartPoint, const float MaxRange);
+	void SetupPropagationPoint(const FVector& StartPoint, FPropagationPointStatus& Point, const float MaxRange) const;
 
 	void ProcessPropagation(FPropagationPointStatus& Point, float DeltaTime) const;
 	void ProcessFadeOut(FPropagationPointStatus& Point, float DeltaTime) const;

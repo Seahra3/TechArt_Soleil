@@ -3,6 +3,7 @@
 #include "Engine/Canvas.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetRenderingLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 ALuminescentObject::ALuminescentObject()
 {
@@ -96,15 +97,27 @@ void ALuminescentObject::OnHit(
 	FVector BodyPoint;
 	MeshComponent->GetClosestPointOnCollision(Hit.Location, BodyPoint);
 
-	const float HitStrength = OtherActor->GetVelocity().Size();
+	const float MaxRange = OtherActor->GetVelocity().Size() * IntensityRatio;
 	
-	TryStartPropagation(BodyPoint, HitStrength);
+	TryStartPropagation(BodyPoint, MaxRange);
 	IgnoreCollision = true;
 
 	FTimerHandle Handle;
 	GetWorldTimerManager().SetTimer(Handle,
 		[this]() -> void { IgnoreCollision = false; },
 	IgnoreCollisionTimer, false);
+
+	TArray<AActor*> LuminescentObjects;
+	
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectType;
+	ObjectType.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
+	UKismetSystemLibrary::SphereOverlapActors(this, BodyPoint, MaxRange, ObjectType, StaticClass(), {this}, LuminescentObjects);
+
+	for (AActor* actor : LuminescentObjects)
+	{
+		ALuminescentObject* const LuminescentObject = Cast<ALuminescentObject>(actor);
+		LuminescentObject->AddPropagationPoint(BodyPoint, MaxRange);
+	}
 
 }
 
@@ -164,9 +177,9 @@ void ALuminescentObject::SendToShader(UTextureRenderTarget2D* const Texture, con
 	UKismetRenderingLibrary::EndDrawCanvasToRenderTarget(this, Context);
 }
 
-void ALuminescentObject::AddPropagationPoint(const FVector& Point, const float HitStrength)
+void ALuminescentObject::AddPropagationPoint(const FVector& Point, const float MaxRange)
 {
-	TryStartPropagation(Point, HitStrength);
+	TryStartPropagation(Point, MaxRange);
 	IgnoreCollision = true;
 
 	FTimerHandle Handle;
@@ -175,24 +188,24 @@ void ALuminescentObject::AddPropagationPoint(const FVector& Point, const float H
 	IgnoreCollisionTimer, false);
 }
 
-void ALuminescentObject::TryStartPropagation(const FVector& StartPoint, const float HitStrength)
+void ALuminescentObject::TryStartPropagation(const FVector& StartPoint, const float MaxRange)
 {
 	for (FPropagationPointStatus& p : PropagationPoints)
 	{
 		if (p.Stage == EPropagationStage::Inactive)
 		{
-			SetupPropagationPoint(StartPoint, p, HitStrength);
+			SetupPropagationPoint(StartPoint, p, MaxRange);
 			break;
 		}
 	}
 }
 
-void ALuminescentObject::SetupPropagationPoint(const FVector& StartPoint, FPropagationPointStatus& Point, const float HitStrength) const
+void ALuminescentObject::SetupPropagationPoint(const FVector& StartPoint, FPropagationPointStatus& Point, const float MaxRange) const
 {
 	Point.Stage = EPropagationStage::Active;
 	Point.PropagationTime = 0.f;
 	Point.HitPoint = StartPoint;
-	Point.PropagationDistance = HitStrength * IntensityRatio;
+	Point.PropagationDistance = MaxRange;
 }
 
 void ALuminescentObject::ProcessPropagation(FPropagationPointStatus& Point, const float DeltaTime) const
