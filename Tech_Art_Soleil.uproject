@@ -57,6 +57,11 @@
 		{
 			"Name": "UdpMessaging",
 			"Enabled": false
+		},
+		{
+			"Name": "Kdtree",
+			"Enabled": false,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/33e46eae83184c4789126ddd129d5fd5"
 		}
 	]
 }

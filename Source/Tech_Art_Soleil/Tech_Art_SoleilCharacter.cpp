@@ -57,13 +57,10 @@ ATech_Art_SoleilCharacter::ATech_Art_SoleilCharacter()
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
 	static ConstructorHelpers::FClassFinder<ARock> RockClassFinder(TEXT("/Game/Content/Blueprints/BP_Rock"));
-	static ConstructorHelpers::FClassFinder<AActor> TrajectoryPointClassFinder(TEXT("/Game/Content/Blueprints/BP_TrajectoryPoint"));
 
 	if (RockClassFinder.Class != nullptr)
 		RockClass = RockClassFinder.Class;
 
-	if (TrajectoryPointClassFinder.Class != nullptr)
-		TrajectoryPointClass = TrajectoryPointClassFinder.Class;
 }
 
 void ATech_Art_SoleilCharacter::BeginPlay()
