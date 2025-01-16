@@ -42,6 +42,7 @@ private:
 		float TimeToSend;
 		float FadeOutTimer;
 		float FadeOutIntensity;
+		float PropagationDistance;
 	};
 	
 public:	
@@ -79,9 +80,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	float PropagationSpeed = 1.f;
 
-	// Output intensity of the light
+	// The intensity ratio of the light
 	UPROPERTY(EditAnywhere)
-	float Intensity = 1.f;
+	float IntensityRatio = 1.f;
 
 	// Delay before the fade out, in seconds
 	UPROPERTY(EditAnywhere)
@@ -99,9 +100,11 @@ private:
 	void SendPointsToShader();
 	void SendTimesToShader();
 	void SendToShader(UTextureRenderTarget2D* Texture, const std::function<FLinearColor(const FPropagationPointStatus&)>& Lambda);
+
+	void AddPropagationPoint(const FVector& Point, const float HitStrength);
 	
-	void TryStartPropagation(const FVector& StartPoint);
-	void SetupPropagationPoint(const FVector& StartPoint, FPropagationPointStatus& Point) const;
+	void TryStartPropagation(const FVector& StartPoint, const float HitStrength);
+	void SetupPropagationPoint(const FVector& StartPoint, FPropagationPointStatus& Point, const float HitStrength) const;
 
 	void ProcessPropagation(FPropagationPointStatus& Point, float DeltaTime) const;
 	void ProcessFadeOut(FPropagationPointStatus& Point, float DeltaTime) const;

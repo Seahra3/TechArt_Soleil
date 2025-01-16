@@ -27,7 +27,7 @@ void ALuminescentObject::BeginPlay()
 	Material->SetScalarParameterValue(TEXT("MaxPropagationDistance"), PropagationDistance);
 
 	// Set brightness
-	Material->SetScalarParameterValue(TEXT("Brightness"), Intensity);
+	Material->SetScalarParameterValue(TEXT("Brightness"), IntensityRatio);
 
 	// Compute the time it will take to finish the propagation
 	TotalPropagationTime = PropagationDistance / PropagationSpeed;
@@ -84,7 +84,7 @@ void ALuminescentObject::Tick(const float DeltaTime)
 
 void ALuminescentObject::OnHit(
 	UPrimitiveComponent* const,
-	AActor* const,
+	AActor* const OtherActor,
 	UPrimitiveComponent* const,
 	const FVector,
 	const FHitResult& Hit
@@ -96,13 +96,16 @@ void ALuminescentObject::OnHit(
 	FVector BodyPoint;
 	MeshComponent->GetClosestPointOnCollision(Hit.Location, BodyPoint);
 
-	TryStartPropagation(BodyPoint);
+	const float HitStrength = OtherActor->GetVelocity().Size();
+	
+	TryStartPropagation(BodyPoint, HitStrength);
 	IgnoreCollision = true;
 
 	FTimerHandle Handle;
 	GetWorldTimerManager().SetTimer(Handle,
 		[this]() -> void { IgnoreCollision = false; },
 	IgnoreCollisionTimer, false);
+
 }
 
 void ALuminescentObject::SetupRenderTarget()
@@ -131,7 +134,7 @@ void ALuminescentObject::SendTimesToShader()
 		constexpr FLinearColor ColorEmpty = FLinearColor(-1.f, -1.f, -1.f, -1.f);
 
 		return Point.Stage != EPropagationStage::Inactive
-			? FLinearColor(Point.TimeToSend, Point.FadeOutIntensity, 0.0f, 0.0f)
+			? FLinearColor(Point.TimeToSend, Point.FadeOutIntensity, Point.PropagationDistance, 0.0f)
 			: ColorEmpty;
 	});
 }
@@ -161,23 +164,35 @@ void ALuminescentObject::SendToShader(UTextureRenderTarget2D* const Texture, con
 	UKismetRenderingLibrary::EndDrawCanvasToRenderTarget(this, Context);
 }
 
-void ALuminescentObject::TryStartPropagation(const FVector& StartPoint)
+void ALuminescentObject::AddPropagationPoint(const FVector& Point, const float HitStrength)
+{
+	TryStartPropagation(Point, HitStrength);
+	IgnoreCollision = true;
+
+	FTimerHandle Handle;
+	GetWorldTimerManager().SetTimer(Handle,
+		[this]() -> void { IgnoreCollision = false; },
+	IgnoreCollisionTimer, false);
+}
+
+void ALuminescentObject::TryStartPropagation(const FVector& StartPoint, const float HitStrength)
 {
 	for (FPropagationPointStatus& p : PropagationPoints)
 	{
 		if (p.Stage == EPropagationStage::Inactive)
 		{
-			SetupPropagationPoint(StartPoint, p);
+			SetupPropagationPoint(StartPoint, p, HitStrength);
 			break;
 		}
 	}
 }
 
-void ALuminescentObject::SetupPropagationPoint(const FVector& StartPoint, FPropagationPointStatus& Point) const
+void ALuminescentObject::SetupPropagationPoint(const FVector& StartPoint, FPropagationPointStatus& Point, const float HitStrength) const
 {
 	Point.Stage = EPropagationStage::Active;
 	Point.PropagationTime = 0.f;
 	Point.HitPoint = StartPoint;
+	Point.PropagationDistance = HitStrength * IntensityRatio;
 }
 
 void ALuminescentObject::ProcessPropagation(FPropagationPointStatus& Point, const float DeltaTime) const
