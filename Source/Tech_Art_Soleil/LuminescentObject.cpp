@@ -97,7 +97,7 @@ void ALuminescentObject::OnHit(
 	FVector BodyPoint;
 	MeshComponent->GetClosestPointOnCollision(Hit.Location, BodyPoint);
 
-	const float MaxRange = OtherActor->GetVelocity().Size() * IntensityRatio;
+	const float MaxRange = OtherActor->GetTransform().GetTranslation().Length() * IntensityRatio;
 	
 	TryStartPropagation(BodyPoint, MaxRange);
 	IgnoreCollision = true;
@@ -111,6 +111,7 @@ void ALuminescentObject::OnHit(
 	
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectType;
 	ObjectType.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
+	ObjectType.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_PhysicsBody));
 	UKismetSystemLibrary::SphereOverlapActors(this, BodyPoint, MaxRange, ObjectType, StaticClass(), {this}, LuminescentObjects);
 
 	for (AActor* actor : LuminescentObjects)

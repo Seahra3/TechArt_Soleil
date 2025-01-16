@@ -53,6 +53,10 @@
 				"Android",
 				"VisionOS"
 			]
+		},
+		{
+			"Name": "UdpMessaging",
+			"Enabled": false
 		}
 	]
 }
