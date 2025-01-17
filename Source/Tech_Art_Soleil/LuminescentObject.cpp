@@ -52,7 +52,7 @@ void ALuminescentObject::Tick(const float DeltaTime)
 	for (size_t i = 0; i < PropagationPoints.size(); i++)
 	{
 		FPropagationPointStatus& p = PropagationPoints[i];
-		UE_LOG(LogTemp, Display, TEXT("Point %llu: Stage : %lld | Timer : %f"),i,p.Stage, p.PropagationTime);
+		//UE_LOG(LogTemp, Display, TEXT("Point %llu: Stage : %lld | Timer : %f"),i,p.Stage, p.PropagationTime);
 		// Easing functions from https://easings.net/en
 
 		// First update the propagation point
@@ -74,6 +74,8 @@ void ALuminescentObject::Tick(const float DeltaTime)
 			case EPropagationStage::FadeOut:
 				ProcessFadeOut(p, DeltaTime);
 		}
+
+		//UE_LOG(LogTemp, Display, TEXT("Point %d: time : %f Stage : %lld (%f, %f, %f)"), i, p.TimeToSend, p.Stage, p.HitPoint.X, p.HitPoint.Y, p.HitPoint.Z);
 	}
 
 	// Send data to the textures
@@ -101,7 +103,7 @@ void ALuminescentObject::OnHit(
 	const float MaxRange = OtherActor->GetTransform().GetTranslation().Length() * IntensityRatio;
 	
 	TryStartPropagation(BodyPoint, MaxRange);
-	//IgnoreCollision = true;
+	IgnoreCollision = true;
 
 	FTimerHandle Handle;
 	GetWorldTimerManager().SetTimer(Handle,
@@ -172,7 +174,7 @@ void ALuminescentObject::SendToShader(UTextureRenderTarget2D* const Texture, con
 			const FLinearColor Data = Lambda(p);
 
 			// Write color to texture
-			TimesCanvas->K2_DrawBox(FVector2d(i, 0.f), FVector2D::One(), 1.f , Data);
+			TimesCanvas->K2_DrawBox(FVector2d(i + 0.5f, 0.f), FVector2D::One(), 1.f , Data);
 		}
 	}
 
@@ -192,11 +194,11 @@ void ALuminescentObject::AddPropagationPoint(const FVector& Point, const float M
 
 void ALuminescentObject::TryStartPropagation(const FVector& StartPoint, const float MaxRange)
 {
-	for (FPropagationPointStatus& p : PropagationPoints)
+	for (size_t i = 0; i < PropagationPoints.size(); i++)
 	{
-		if (p.Stage == EPropagationStage::Inactive)
+		if (PropagationPoints[i].Stage == EPropagationStage::Inactive)
 		{
-			SetupPropagationPoint(StartPoint, p, MaxRange);
+			SetupPropagationPoint(StartPoint, PropagationPoints[i], MaxRange);
 			break;
 		}
 	}
@@ -249,6 +251,7 @@ void ALuminescentObject::ProcessFadeOut(FPropagationPointStatus& Point, const fl
 	{
 		Point.PropagationTime = 0.0f;
 		Point.FadeOutIntensity = 0.0f;
+		Point.TimeToSend = 0.0f;
 		Point.Stage = EPropagationStage::Inactive;
 	}
 }
