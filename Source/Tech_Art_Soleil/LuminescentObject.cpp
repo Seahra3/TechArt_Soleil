@@ -52,6 +52,7 @@ void ALuminescentObject::Tick(const float DeltaTime)
 	for (size_t i = 0; i < PropagationPoints.size(); i++)
 	{
 		FPropagationPointStatus& p = PropagationPoints[i];
+		UE_LOG(LogTemp, Display, TEXT("Point %llu: Stage : %lld | Timer : %f"),i,p.Stage, p.PropagationTime);
 		// Easing functions from https://easings.net/en
 
 		// First update the propagation point
@@ -100,7 +101,7 @@ void ALuminescentObject::OnHit(
 	const float MaxRange = OtherActor->GetTransform().GetTranslation().Length() * IntensityRatio;
 	
 	TryStartPropagation(BodyPoint, MaxRange);
-	IgnoreCollision = true;
+	//IgnoreCollision = true;
 
 	FTimerHandle Handle;
 	GetWorldTimerManager().SetTimer(Handle,
@@ -114,9 +115,9 @@ void ALuminescentObject::OnHit(
 	ObjectType.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_PhysicsBody));
 	UKismetSystemLibrary::SphereOverlapActors(this, BodyPoint, MaxRange, ObjectType, StaticClass(), {this}, LuminescentObjects);
 
-	for (AActor* actor : LuminescentObjects)
+	for (AActor* const Actor : LuminescentObjects)
 	{
-		ALuminescentObject* const LuminescentObject = Cast<ALuminescentObject>(actor);
+		ALuminescentObject* const LuminescentObject = Cast<ALuminescentObject>(Actor);
 		LuminescentObject->AddPropagationPoint(BodyPoint, MaxRange);
 	}
 
@@ -171,7 +172,7 @@ void ALuminescentObject::SendToShader(UTextureRenderTarget2D* const Texture, con
 			const FLinearColor Data = Lambda(p);
 
 			// Write color to texture
-			TimesCanvas->K2_DrawBox(FVector2d(i * 2, 0.f), FVector2D::One(), 1.f , Data);
+			TimesCanvas->K2_DrawBox(FVector2d(i, 0.f), FVector2D::One(), 1.f , Data);
 		}
 	}
 
